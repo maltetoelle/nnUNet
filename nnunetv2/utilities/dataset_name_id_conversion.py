@@ -24,7 +24,7 @@ def find_candidate_datasets(dataset_id: int):
         candidates_preprocessed = subdirs(nnUNet_preprocessed, prefix=startswith, join=False)
     else:
         candidates_preprocessed = []
-
+    
     if nnUNet_raw is not None and isdir(nnUNet_raw):
         candidates_raw = subdirs(nnUNet_raw, prefix=startswith, join=False)
     else:
@@ -33,7 +33,7 @@ def find_candidate_datasets(dataset_id: int):
     candidates_trained_models = []
     if nnUNet_results is not None and isdir(nnUNet_results):
         candidates_trained_models += subdirs(nnUNet_results, prefix=startswith, join=False)
-
+    
     all_candidates = candidates_preprocessed + candidates_raw + candidates_trained_models
     unique_candidates = np.unique(all_candidates)
     return unique_candidates

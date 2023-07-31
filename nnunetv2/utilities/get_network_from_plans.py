@@ -29,19 +29,25 @@ def get_network_from_plans(plans_manager: PlansManager,
         'PlainConvUNet': PlainConvUNet,
         'ResidualEncoderUNet': ResidualEncoderUNet
     }
+    
+    dropout_op = plans_manager.dropout_op if hasattr(plans_manager, 'dropout_op') else None
+    dropout_op_kwargs = plans_manager.dropout_op_kwargs if hasattr(plans_manager, 'dropout_op_kwargs') else None
+
     kwargs = {
         'PlainConvUNet': {
             'conv_bias': True,
             'norm_op': get_matching_instancenorm(conv_op),
             'norm_op_kwargs': {'eps': 1e-5, 'affine': True},
-            'dropout_op': None, 'dropout_op_kwargs': None,
+            # 'dropout_op': None, 'dropout_op_kwargs': None,
+            'dropout_op': dropout_op, 'dropout_op_kwargs': dropout_op_kwargs,
             'nonlin': nn.LeakyReLU, 'nonlin_kwargs': {'inplace': True},
         },
         'ResidualEncoderUNet': {
             'conv_bias': True,
             'norm_op': get_matching_instancenorm(conv_op),
             'norm_op_kwargs': {'eps': 1e-5, 'affine': True},
-            'dropout_op': None, 'dropout_op_kwargs': None,
+            # 'dropout_op': None, 'dropout_op_kwargs': None,
+            'dropout_op': dropout_op, 'dropout_op_kwargs': dropout_op_kwargs,
             'nonlin': nn.LeakyReLU, 'nonlin_kwargs': {'inplace': True},
         }
     }

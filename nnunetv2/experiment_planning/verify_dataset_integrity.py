@@ -152,7 +152,7 @@ def verify_dataset_integrity(folder: str, num_processes: int = 8) -> None:
     file_ending = dataset_json['file_ending']
 
     training_identifiers = get_identifiers_from_splitted_dataset_folder(join(folder, 'imagesTr'), file_ending=file_ending)
-
+    
     # check if the right number of training cases is present
     assert len(training_identifiers) == expected_num_training, 'Did not find the expected number of training cases ' \
                                                                '(%d). Found %d instead.\nExamples: %s' % \

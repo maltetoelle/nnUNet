@@ -77,11 +77,15 @@ class ExperimentPlanner(object):
         self.plans = None
 
     def determine_reader_writer(self):
-        training_identifiers = get_identifiers_from_splitted_dataset_folder(join(self.raw_dataset_folder, 'imagesTr'),
-                                                                            self.dataset_json['file_ending'])
-        return determine_reader_writer_from_dataset_json(self.dataset_json, join(self.raw_dataset_folder, 'imagesTr',
-                                                                                 training_identifiers[0] + '_0000' +
-                                                                                 self.dataset_json['file_ending']))
+        try:
+            training_identifiers = get_identifiers_from_splitted_dataset_folder(join(self.raw_dataset_folder, 'imagesTr'),
+                                                                                self.dataset_json['file_ending'])
+            return determine_reader_writer_from_dataset_json(self.dataset_json, join(self.raw_dataset_folder, 'imagesTr',
+                                                                                    training_identifiers[0] + '_0000' +
+                                                                                    self.dataset_json['file_ending']))
+        except:
+            from nnunetv2.imageio.simpleitk_reader_writer import SimpleITKIO
+            return SimpleITKIO
 
     @staticmethod
     @lru_cache(maxsize=None)

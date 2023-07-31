@@ -225,10 +225,21 @@ class DefaultPreprocessor(object):
         # list of segmentation filenames
         seg_fnames = [join(nnUNet_raw, dataset_name, 'labelsTr', i + file_ending) for i in identifiers]
 
-        _ = ptqdm(self.run_case_save, (output_filenames_truncated, image_fnames, seg_fnames),
-                  processes=num_processes, zipped=True, plans_manager=plans_manager,
-                  configuration_manager=configuration_manager,
-                  dataset_json=dataset_json, disable=self.verbose)
+        from tqdm import tqdm
+        for oft, img_fname, seg_fname in tqdm(zip(output_filenames_truncated, image_fnames, seg_fnames), total=len(image_fnames)):
+            _ = self.run_case_save(
+                output_filename_truncated=oft, 
+                image_files=img_fname, 
+                seg_file=seg_fname,
+                plans_manager=plans_manager, 
+                configuration_manager=configuration_manager,
+                dataset_json=dataset_json
+            )
+
+        # _ = ptqdm(self.run_case_save, (output_filenames_truncated, image_fnames, seg_fnames),
+        #           processes=num_processes, zipped=True, plans_manager=plans_manager,
+        #           configuration_manager=configuration_manager,
+        #           dataset_json=dataset_json, disable=self.verbose)
 
     def modify_seg_fn(self, seg: np.ndarray, plans_manager: PlansManager, dataset_json: dict,
                       configuration_manager: ConfigurationManager) -> np.ndarray:

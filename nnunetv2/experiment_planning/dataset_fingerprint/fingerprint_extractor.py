@@ -127,10 +127,16 @@ class DatasetFingerprintExtractor(object):
             num_foreground_samples_per_case = int(self.num_foreground_voxels_for_intensitystats //
                                                   len(training_identifiers))
 
-            results = ptqdm(DatasetFingerprintExtractor.analyze_case,
-                            (training_images_per_case, training_labels_per_case),
-                            processes=self.num_processes, zipped=True, reader_writer_class=reader_writer_class,
-                            num_samples=num_foreground_samples_per_case, disable=self.verbose)
+            from tqdm import tqdm
+            results = []
+            for i, (tipc, tlpc) in tqdm(enumerate(zip(training_images_per_case, training_labels_per_case)), total=len(training_images_per_case)):
+                results_case = DatasetFingerprintExtractor.analyze_case(tipc, tlpc, reader_writer_class=reader_writer_class, num_samples=num_foreground_samples_per_case)
+                results.append(results_case)
+
+            # results = ptqdm(DatasetFingerprintExtractor.analyze_case,
+            #                 (training_images_per_case, training_labels_per_case),
+            #                 processes=self.num_processes, zipped=True, reader_writer_class=reader_writer_class,
+            #                 num_samples=num_foreground_samples_per_case, disable=self.verbose)
 
             shapes_after_crop = [r[0] for r in results]
             spacings = [r[1] for r in results]
@@ -143,6 +149,16 @@ class DatasetFingerprintExtractor(object):
             num_channels = len(self.dataset_json['channel_names'].keys()
                                  if 'channel_names' in self.dataset_json.keys()
                                  else self.dataset_json['modality'].keys())
+            
+            np.savez(
+                f'{self.input_folder}/dataset_fingerprint_results.npz', 
+                shapes_after_crop=shapes_after_crop,
+                spacings=spacings,
+                foreground_intensities_per_channel=foreground_intensities_per_channel,
+                median_relative_size_after_cropping=median_relative_size_after_cropping,
+                num_channels=num_channels
+            )
+
             intensity_statistics_per_channel = {}
             for i in range(num_channels):
                 intensity_statistics_per_channel[i] = {
