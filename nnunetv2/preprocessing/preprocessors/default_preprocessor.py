@@ -11,12 +11,13 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+import multiprocessing
 import shutil
+from time import sleep
 from typing import Union, Tuple
 
 import nnunetv2
 import numpy as np
-from acvl_utils.miscellaneous.ptqdm import ptqdm
 from batchgenerators.utilities.file_and_folder_operations import *
 from nnunetv2.paths import nnUNet_preprocessed, nnUNet_raw
 from nnunetv2.preprocessing.cropping.cropping import crop_to_nonzero
@@ -25,7 +26,8 @@ from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_datas
 from nnunetv2.utilities.find_class_by_name import recursive_find_python_class
 from nnunetv2.utilities.plans_handling.plans_handler import PlansManager, ConfigurationManager
 from nnunetv2.utilities.utils import get_identifiers_from_splitted_dataset_folder, \
-    create_lists_from_splitted_dataset_folder
+    create_lists_from_splitted_dataset_folder, get_filenames_of_train_images_and_targets
+from tqdm import tqdm
 
 
 class DefaultPreprocessor(object):
@@ -38,6 +40,11 @@ class DefaultPreprocessor(object):
     def run_case_npy(self, data: np.ndarray, seg: Union[np.ndarray, None], properties: dict,
                      plans_manager: PlansManager, configuration_manager: ConfigurationManager,
                      dataset_json: Union[dict, str]):
+        # let's not mess up the inputs!
+        data = np.copy(data)
+        if seg is not None:
+            seg = np.copy(seg)
+
         has_seg = seg is not None
 
         # apply transpose_forward, this also needs to be applied to the spacing!
@@ -60,7 +67,7 @@ class DefaultPreprocessor(object):
 
         if len(target_spacing) < len(data.shape[1:]):
             # target spacing for 2d has 2 entries but the data and original_spacing have three because everything is 3d
-            # in 3d we do not change the spacing between slices
+            # in 2d configuration we do not change the spacing between slices
             target_spacing = [original_spacing[0]] + target_spacing
         new_shape = compute_new_shape(data.shape[1:], original_spacing, target_spacing)
 
@@ -207,8 +214,6 @@ class DefaultPreprocessor(object):
         dataset_json_file = join(nnUNet_preprocessed, dataset_name, 'dataset.json')
         dataset_json = load_json(dataset_json_file)
 
-        identifiers = get_identifiers_from_splitted_dataset_folder(join(nnUNet_raw, dataset_name, 'imagesTr'),
-                                                               dataset_json['file_ending'])
         output_directory = join(nnUNet_preprocessed, dataset_name, configuration_manager.data_identifier)
 
         if isdir(output_directory):
@@ -216,14 +221,10 @@ class DefaultPreprocessor(object):
 
         maybe_mkdir_p(output_directory)
 
-        output_filenames_truncated = [join(output_directory, i) for i in identifiers]
+        dataset = get_filenames_of_train_images_and_targets(join(nnUNet_raw, dataset_name), dataset_json)
 
-        file_ending = dataset_json['file_ending']
-        # list of lists with image filenames
-        image_fnames = create_lists_from_splitted_dataset_folder(join(nnUNet_raw, dataset_name, 'imagesTr'), file_ending,
-                                                                 identifiers)
-        # list of segmentation filenames
-        seg_fnames = [join(nnUNet_raw, dataset_name, 'labelsTr', i + file_ending) for i in identifiers]
+        # identifiers = [os.path.basename(i[:-len(dataset_json['file_ending'])]) for i in seg_fnames]
+        # output_filenames_truncated = [join(output_directory, i) for i in identifiers]
 
         from tqdm import tqdm
         for oft, img_fname, seg_fname in tqdm(zip(output_filenames_truncated, image_fnames, seg_fnames), total=len(image_fnames)):
